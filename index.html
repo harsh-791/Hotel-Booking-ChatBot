@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StellarStay Concierge</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4a148c;
+            --secondary-color: #7c43bd;
+            --accent-color: #ff6e40;
+            --background-color: #f0f0f0;
+            --chat-background: #ffffff;
+            --user-message-color: #4a148c;
+            --bot-message-color: #7c43bd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--background-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 50%;
+            min-width: 300px;
+            max-width: 500px;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--chat-background);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 24px;
+            font-weight: 600;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 60%);
+            animation: ripple 15s linear infinite;
+        }
+
+        @keyframes ripple {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        #chat-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 18px;
+            border-radius: 18px;
+            max-width: 80%;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.3s forwards;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message h2 {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-top: 10px;
+            margin-bottom: 5px;
+        }
+
+        .message ul {
+            padding-left: 20px;
+            margin-bottom: 10px;
+        }
+
+        .message p {
+            margin-bottom: 10px;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-message {
+            background-color: var(--user-message-color);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+
+        .bot-message {
+            background-color: var(--bot-message-color);
+            color: white;
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+
+        .input-area {
+            display: flex;
+            padding: 20px;
+            background-color: var(--background-color);
+        }
+
+        #user-input {
+            flex-grow: 1;
+            padding: 12px 18px;
+            font-size: 16px;
+            border: none;
+            border-radius: 25px;
+            background-color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #user-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+
+        #send-button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            margin-left: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        #send-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        #send-button::before {
+            content: '→';
+            font-size: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                width: 90%;
+                height: 90vh;
+            }
+        }
+
+        .waiting-message {
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            height: 24px;
+            margin-bottom: 15px;
+        }
+
+        .waiting-dots {
+            display: flex;
+        }
+
+        .waiting-dots span {
+            width: 8px;
+            height: 8px;
+            margin: 0 4px;
+            background-color: var(--bot-message-color);
+            border-radius: 50%;
+            opacity: 0;
+            animation: waitingDots 1.4s infinite ease-in-out both;
+        }
+
+        .waiting-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .waiting-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes waitingDots {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>StellarStay Concierge</header>
+        <div id="chat-container"></div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="How can I assist you today?">
+            <button id="send-button"></button>
+        </div>
+    </div>
+
+    <script>
+        const chatContainer = document.getElementById('chat-container');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        let userId = 'user-' + Math.random().toString(36).substr(2, 9);
+
+        function formatMessage(message) {
+            const emojiMap = {
+                '🏨': 'Hotel',
+                '🛎️': 'Service',
+                '🛏️': 'Room',
+                '📅': 'Booking',
+                '💰': 'Price',
+                '🍽️': 'Dining',
+                '🏖️': 'Amenities',
+                '🚗': 'Transportation',
+                '📞': 'Contact',
+                '❓': 'FAQ'
+            };
+
+            const formattedMessage = message
+                // Convert Markdown headers to HTML headings with emojis
+                .replace(/^## (.*$)/gim, (match, p1) => {
+                    const emoji = Object.keys(emojiMap).find(key => p1.toLowerCase().includes(emojiMap[key].toLowerCase())) || '✨';
+                    return `<h2>${emoji} ${p1}</h2>`;
+                })
+                // Convert bullet points to list items
+                .replace(/^• (.*$)/gim, '<li>$1</li>')
+                // Handle newlines and paragraphs
+                .split('\n').map(line => {
+                    if (line.trim().startsWith('<h2>') || line.trim().startsWith('<li>')) {
+                        return line;
+                    } else if (line.trim()) {
+                        return `<p>${line}</p>`;
+                    } else {
+                        return '';
+                    }
+                }).join('')
+                // Ensure lists are properly wrapped
+                .replace(/<li>(.+?)<\/li>/g, '<ul><li>$1</li></ul>')
+                .replace(/<\/ul><ul>/g, '')
+                // Clean up any empty paragraphs
+                .replace(/<p>\s*<\/p>/g, '');
+
+            return formattedMessage;
+        }
+
+        function addMessage(sender, message) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', sender.toLowerCase() + '-message');
+            messageElement.innerHTML = formatMessage(message);
+            chatContainer.appendChild(messageElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+
+            // Trigger reflow to restart animation
+            void messageElement.offsetWidth;
+            messageElement.style.animation = 'none';
+            messageElement.style.animation = null;
+
+            return messageElement;
+        }
+
+        function addWaitingAnimation() {
+            const waitingElement = document.createElement('div');
+            waitingElement.classList.add('waiting-message');
+            waitingElement.innerHTML = '<div class="waiting-dots"><span></span><span></span><span></span></div>';
+            chatContainer.appendChild(waitingElement);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return waitingElement;
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message) {
+                addMessage('user', message);
+                userInput.value = '';
+
+                const waitingAnimation = addWaitingAnimation();
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message, userId }),
+                    });
+
+                    const data = await response.json();
+                    chatContainer.removeChild(waitingAnimation);
+                    addMessage('bot', data.response);
+                } catch (error) {
+                    console.error('Error:', error);
+                    chatContainer.removeChild(waitingAnimation);
+                    addMessage('bot', 'Sorry, an error occurred. Please try again.');
+                }
+            }
+        }
+
+        function addInitialGreeting() {
+            const greetingMessage = `## Welcome to StellarStay! 🌟
+
+Hello! I'm Neko, your StellarStay Concierge. I'm here to assist you with all your hotel booking needs and answer any questions you might have about our services. 
+
+How can I help you today? Feel free to ask about:
+
+- Room availability and types
+- Booking process
+- Hotel amenities
+- Special offers
+- Local attractions
+
+Don't hesitate to ask if you need any information. I'm here to ensure your stay with us is nothing short of stellar! 😊`;
+
+            addMessage('bot', greetingMessage);
+        }
+
+        // Add event listeners
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Add initial greeting when the page loads
+        window.addEventListener('load', addInitialGreeting);
+    </script>
+</body>
+</html>
